@@ -307,6 +307,7 @@ export default function Home() {
         {/* ===== الآية القرآنية ===== */}
         <section className="border-t border-border/60 bg-primary/5 py-12">
           <div className="mx-auto max-w-4xl px-4 text-center">
+            <p className="mb-4 text-sm font-medium text-muted-foreground">قال تعالى:</p>
             <p className="text-lg font-semibold leading-[2.2] text-foreground md:text-xl">
               ﴿ يُوصِيكُمُ اللَّهُ فِي أَوْلَادِكُمْ ۖ لِلذَّكَرِ مِثْلُ حَظِّ
               الْأُنثَيَيْنِ ۚ فَإِن كُنَّ نِسَاءً فَوْقَ اثْنَتَيْنِ فَلَهُنَّ ثُلُثَا
