@@ -935,125 +935,142 @@ function ResultsView({
   };
 
   const handleDownloadPDF = async () => {
-    const { jsPDF } = await import("jspdf");
+    const [{ jsPDF }, { AMIRI_REGULAR_BASE64 }] = await Promise.all([
+      import("jspdf"),
+      import("@/lib/fonts/amiri-base64"),
+    ]);
+
     const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
 
-    // تسجيل خط يدعم العربية
-    doc.setFont("Helvetica");
-    const pageWidth = doc.internal.pageSize.getWidth();
-    let y = 20;
+    // تسجيل خط Amiri العربي
+    doc.addFileToVFS("Amiri-Regular.ttf", AMIRI_REGULAR_BASE64);
+    doc.addFont("Amiri-Regular.ttf", "Amiri", "normal");
+    doc.setFont("Amiri", "normal");
 
-    // عنوان
-    doc.setFontSize(18);
+    const pw = doc.internal.pageSize.getWidth();
+    const rMargin = pw - 20; // هامش يمين (بداية النص RTL)
+    let y = 25;
+
+    // مساعد: نص RTL من اليمين
+    const rtl = (text: string, x: number, yPos: number, opts?: object) => {
+      doc.text(text, x, yPos, { align: "right", ...opts });
+    };
+
+    // ═══ عنوان ═══
+    doc.setFontSize(22);
     doc.setTextColor(6, 95, 70);
-    doc.text("Mirath", pageWidth / 2, y, { align: "center" });
-    y += 8;
-    doc.setFontSize(10);
-    doc.setTextColor(100);
-    doc.text(new Date().toLocaleDateString("ar-SA"), pageWidth / 2, y, { align: "center" });
-    y += 12;
+    rtl("ميراث — نتائج توزيع التركة", pw / 2 + 40, y);
+    y += 9;
+    doc.setFontSize(11);
+    doc.setTextColor(120);
+    rtl(`تاريخ الحساب: ${new Date().toLocaleDateString("ar-SA")}`, pw / 2 + 40, y);
+    y += 10;
 
     // خط فاصل
     doc.setDrawColor(6, 95, 70);
-    doc.setLineWidth(0.5);
-    doc.line(20, y, pageWidth - 20, y);
-    y += 10;
+    doc.setLineWidth(0.6);
+    doc.line(20, y, rMargin, y);
+    y += 12;
 
-    // صافي التركة
-    doc.setFontSize(12);
-    doc.setTextColor(0);
-    doc.text(`Net Estate: ${formatCurrency(netEstate)}`, pageWidth / 2, y, { align: "center" });
+    // ═══ صافي التركة ═══
+    doc.setFontSize(14);
+    doc.setTextColor(6, 95, 70);
+    rtl(`صافي التركة: ${formatCurrency(netEstate)}`, rMargin, y);
     y += 12;
 
     // تنبيهات
+    doc.setFontSize(10);
+    doc.setTextColor(180, 100, 0);
+    if (result.specialCase) {
+      rtl(`حالة خاصة: ${result.specialCase.nameArabic}`, rMargin, y);
+      y += 7;
+    }
     if (result.awlApplied && result.awlDetails) {
-      doc.setFontSize(9);
-      doc.setTextColor(180, 100, 0);
-      doc.text(`Awl: ${result.awlDetails.originalBase} -> ${result.awlDetails.newBase}`, pageWidth / 2, y, { align: "center" });
-      y += 8;
+      rtl(`عول: أصل المسألة ${result.awlDetails.originalBase} عال إلى ${result.awlDetails.newBase}`, rMargin, y);
+      y += 7;
     }
     if (result.raddApplied) {
-      doc.setFontSize(9);
-      doc.setTextColor(180, 100, 0);
-      doc.text("Radd applied", pageWidth / 2, y, { align: "center" });
-      y += 8;
+      rtl("رد: الفائض أُعيد توزيعه على أصحاب الفروض", rMargin, y);
+      y += 7;
     }
 
-    // جدول الأنصبة
+    y += 3;
+
+    // ═══ جدول الأنصبة ═══
+    // رؤوس الأعمدة (RTL: من اليمين لليسار)
+    const c1 = rMargin;      // الوارث
+    const c2 = 130;          // الكسر
+    const c3 = 100;          // النسبة
+    const c4 = 55;           // المبلغ
+
     doc.setFontSize(11);
-    doc.setTextColor(0);
-
-    // رؤوس الأعمدة
-    const col1 = 20;
-    const col2 = 70;
-    const col3 = 110;
-    const col4 = 150;
-
-    doc.setFont("Helvetica", "bold");
-    doc.text("Heir", col1, y);
-    doc.text("Share", col2, y);
-    doc.text("Percentage", col3, y);
-    doc.text("Amount", col4, y);
+    doc.setTextColor(6, 95, 70);
+    rtl("الوارث", c1, y);
+    rtl("الكسر", c2, y);
+    rtl("النسبة", c3, y);
+    rtl("المبلغ", c4, y);
     y += 2;
-    doc.setLineWidth(0.2);
-    doc.line(col1, y, pageWidth - 20, y);
-    y += 6;
+    doc.setDrawColor(200);
+    doc.setLineWidth(0.3);
+    doc.line(20, y, rMargin, y);
+    y += 7;
 
-    doc.setFont("Helvetica", "normal");
-    doc.setFontSize(10);
+    // البيانات
+    doc.setTextColor(30);
+    doc.setFontSize(11);
 
     for (const share of result.shares) {
-      if (y > 270) {
-        doc.addPage();
-        y = 20;
-      }
-      const name = HEIR_LABELS[share.heir];
-      const countLabel = share.count > 1 ? ` (${share.count})` : "";
-      const pct = (toNumber(share.fraction) * 100).toFixed(2) + "%";
+      if (y > 265) { doc.addPage(); y = 20; }
+      const name = HEIR_LABELS[share.heir] + (share.count > 1 ? ` (${share.count})` : "");
       const frac = `${share.fraction.num}/${share.fraction.den}`;
+      const pct = `%${(toNumber(share.fraction) * 100).toFixed(2)}`;
+      const amt = formatCurrency(share.amount);
 
-      doc.text(name + countLabel, col1, y);
-      doc.text(frac, col2, y);
-      doc.text(pct, col3, y);
-      doc.text(formatCurrency(share.amount), col4, y);
+      rtl(name, c1, y);
+      rtl(frac, c2, y);
+      rtl(pct, c3, y);
+      rtl(amt, c4, y);
 
       if (share.count > 1) {
         y += 5;
         doc.setFontSize(8);
         doc.setTextColor(120);
-        doc.text(`(${formatCurrency(share.perPersonAmount)} per person)`, col4, y);
-        doc.setFontSize(10);
-        doc.setTextColor(0);
+        rtl(`(${formatCurrency(share.perPersonAmount)} لكل فرد)`, c4, y);
+        doc.setFontSize(11);
+        doc.setTextColor(30);
       }
-      y += 8;
+
+      y += 9;
     }
 
-    // المحجوبون
+    // ═══ المحجوبون ═══
     if (result.hajbList.length > 0) {
-      y += 4;
-      doc.setLineWidth(0.2);
-      doc.line(col1, y, pageWidth - 20, y);
-      y += 6;
-      doc.setFont("Helvetica", "bold");
-      doc.setFontSize(10);
-      doc.text("Blocked Heirs:", col1, y);
-      y += 6;
-      doc.setFont("Helvetica", "normal");
+      y += 3;
+      doc.setDrawColor(200);
+      doc.line(20, y, rMargin, y);
+      y += 7;
+      doc.setFontSize(11);
+      doc.setTextColor(6, 95, 70);
+      rtl("الورثة المحجوبون", rMargin, y);
+      y += 7;
       doc.setFontSize(9);
       doc.setTextColor(180, 50, 50);
       for (const h of result.hajbList) {
-        if (y > 270) { doc.addPage(); y = 20; }
-        doc.text(`${HEIR_LABELS[h.heir]}: ${h.explanation}`, col1, y);
+        if (y > 265) { doc.addPage(); y = 20; }
+        rtl(`${HEIR_LABELS[h.heir]}: ${h.explanation}`, rMargin, y);
         y += 6;
       }
     }
 
-    // ذيل الصفحة
+    // ═══ ذيل الصفحة ═══
+    doc.setDrawColor(6, 95, 70);
+    doc.setLineWidth(0.3);
+    doc.line(20, 280, rMargin, 280);
     doc.setTextColor(150);
     doc.setFontSize(8);
-    doc.text("drmliAi.com — Mirath", pageWidth / 2, 287, { align: "center" });
+    doc.text("drmliAi.com", pw / 2, 286, { align: "center" });
 
-    doc.save(`Mirath-${new Date().toISOString().slice(0, 10)}.pdf`);
+    doc.save(`ميراث-${new Date().toISOString().slice(0, 10)}.pdf`);
   };
 
   const handleShare = async () => {
