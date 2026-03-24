@@ -47,7 +47,7 @@ export function Footer() {
           <div>
             <p className="mb-2 font-semibold text-foreground">من السنة النبوية</p>
             <p className="leading-relaxed text-muted-foreground">
-              «تعلَّموا الفرائضَ وعلِّموها الناسَ، فإنَّه نصفُ العلمِ، وهو يُنسى، وهو أوَّلُ شيءٍ يُنزعُ من أمَّتي»
+              قال رسول الله ﷺ: «تعلَّموا الفرائضَ وعلِّموها الناسَ، فإنَّه نصفُ العلمِ، وهو يُنسى، وهو أوَّلُ شيءٍ يُنزعُ من أمَّتي»
             </p>
             <p className="mt-1 text-xs text-muted-foreground/70">رواه ابن ماجه والدارقطني عن أبي هريرة رضي الله عنه</p>
           </div>
