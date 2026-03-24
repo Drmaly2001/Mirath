@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find /c/Users/MN/Documents/GitHub/Mirath -type f -name *.json -o -name *.js -o -name *.jsx -o -name *.ts -o -name *.tsx)",
+      "Bash(npx create-next-app@latest . --typescript --tailwind --eslint --app --src-dir --import-alias \"@/*\" --yes)",
+      "Bash(npx create-next-app@latest mirath-temp --typescript --tailwind --eslint --app --src-dir --import-alias \"@/*\" --yes)",
+      "Bash(cp -r \"c:\\\\Users\\\\MN\\\\Documents\\\\GitHub\\\\mirath-temp/\"* \"c:\\\\Users\\\\MN\\\\Documents\\\\GitHub\\\\Mirath/\")",
+      "Bash(cp -r \"c:\\\\Users\\\\MN\\\\Documents\\\\GitHub\\\\mirath-temp/\".* \"c:\\\\Users\\\\MN\\\\Documents\\\\GitHub\\\\Mirath/\")",
+      "Bash(rm -rf \"c:\\\\Users\\\\MN\\\\Documents\\\\GitHub\\\\mirath-temp\")",
+      "Bash(cp \"c:\\\\Users\\\\MN\\\\Documents\\\\GitHub\\\\mirath-temp/package.json\" \"c:\\\\Users\\\\MN\\\\Documents\\\\GitHub\\\\Mirath/\")",
+      "Bash(cp \"c:\\\\Users\\\\MN\\\\Documents\\\\GitHub\\\\mirath-temp/package-lock.json\" \"c:\\\\Users\\\\MN\\\\Documents\\\\GitHub\\\\Mirath/\")",
+      "Bash(cp \"c:\\\\Users\\\\MN\\\\Documents\\\\GitHub\\\\mirath-temp/tsconfig.json\" \"c:\\\\Users\\\\MN\\\\Documents\\\\GitHub\\\\Mirath/\")",
+      "Bash(cp \"c:\\\\Users\\\\MN\\\\Documents\\\\GitHub\\\\mirath-temp/postcss.config.mjs\" \"c:\\\\Users\\\\MN\\\\Documents\\\\GitHub\\\\Mirath/\")",
+      "Bash(cp \"c:\\\\Users\\\\MN\\\\Documents\\\\GitHub\\\\mirath-temp/next.config.ts\" \"c:\\\\Users\\\\MN\\\\Documents\\\\GitHub\\\\Mirath/\")",
+      "Bash(npm install:*)",
+      "Bash(npx shadcn@latest init -d --yes)"
+    ]
+  }
+}
