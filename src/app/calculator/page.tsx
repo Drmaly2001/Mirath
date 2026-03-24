@@ -285,7 +285,7 @@ function EstateStep({
     estate.assets.length > 0 ? "detailed" : "total"
   );
   const [goldPrice24K, setGoldPrice24K] = useState<number>(0);
-  const [goldSource, setGoldSource] = useState<"api" | "cache" | "fallback" | "manual" | "">("");
+  const [goldSourceName, setGoldSourceName] = useState("");
   const [goldLoading, setGoldLoading] = useState(false);
   const [manualGoldMode, setManualGoldMode] = useState(false);
 
@@ -293,7 +293,7 @@ function EstateStep({
     setGoldLoading(true);
     const result = await fetchGoldPrice(estate.currency as CurrencyCode);
     setGoldPrice24K(result.pricePerGram24K);
-    setGoldSource(result.source);
+    setGoldSourceName(result.sourceName);
     setGoldLoading(false);
   }, [estate.currency]);
 
@@ -492,14 +492,14 @@ function EstateStep({
                     <GoldEvaluator
                       asset={asset}
                       goldPrice24K={goldPrice24K}
-                      goldSource={goldSource}
+                      goldSourceName={goldSourceName}
                       goldLoading={goldLoading}
                       manualMode={manualGoldMode}
                       currencySymbol={CURRENCIES[estate.currency as CurrencyCode]?.symbol ?? "ر.س"}
                       onUpdate={(updates) => updateAsset(asset.id, updates)}
                       onRefresh={loadGoldPrice}
                       onToggleManual={() => setManualGoldMode(!manualGoldMode)}
-                      onManualPrice={(price) => { setGoldPrice24K(price); setGoldSource("manual"); }}
+                      onManualPrice={(price) => { setGoldPrice24K(price); setGoldSourceName("إدخال يدوي"); }}
                     />
                   ) : (
                     <div className="space-y-1">
@@ -1232,7 +1232,7 @@ function ShareCard({ share }: { share: ShareResult }) {
 function GoldEvaluator({
   asset,
   goldPrice24K,
-  goldSource,
+  goldSourceName,
   goldLoading,
   manualMode,
   currencySymbol,
@@ -1243,7 +1243,7 @@ function GoldEvaluator({
 }: {
   asset: Asset;
   goldPrice24K: number;
-  goldSource: string;
+  goldSourceName: string;
   goldLoading: boolean;
   manualMode: boolean;
   currencySymbol: string;
@@ -1276,12 +1276,11 @@ function GoldEvaluator({
           <p className="text-xs font-medium text-foreground">
             سعر الذهب (عيار 24): {goldLoading ? "جارٍ التحميل..." : `${goldPrice24K.toFixed(2)} ${currencySymbol}/غرام`}
           </p>
-          <p className="text-[10px] text-muted-foreground">
-            {goldSource === "api" && "مصدر: الإنترنت (محدّث)"}
-            {goldSource === "cache" && "مصدر: محفوظ مؤقتاً"}
-            {goldSource === "fallback" && "مصدر: سعر تقريبي (فشل الاتصال)"}
-            {goldSource === "manual" && "مصدر: إدخال يدوي"}
-          </p>
+          {goldSourceName && (
+            <p className="text-[10px] text-muted-foreground">
+              المصدر: {goldSourceName}
+            </p>
+          )}
         </div>
         <div className="flex gap-1">
           <button
