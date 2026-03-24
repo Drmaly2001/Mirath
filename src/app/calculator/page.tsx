@@ -55,10 +55,10 @@ import type {
   AssetType,
   Asset,
   GoldEntry,
+  SilverEntry,
 } from "@/lib/fiqh/types";
 import { HEIR_LABELS, ASSET_TYPE_LABELS } from "@/lib/fiqh/types";
 import { CURRENCIES, REGION_LABELS, type CurrencyCode } from "@/lib/currencies";
-import { fetchGoldPrice, priceForKarat, GOLD_KARATS } from "@/lib/gold-api";
 import { toNumber } from "@/lib/fiqh/fraction";
 
 type Step = "estate" | "spouse" | "children" | "parents" | "siblings" | "results";
@@ -260,6 +260,7 @@ const ASSET_ICONS: Record<AssetType, typeof Landmark> = {
   land: MapPin,
   vehicle: Car,
   gold: Gem,
+  silver: Gem,
   stocks: TrendingUp,
   other: Package,
 };
@@ -269,7 +270,8 @@ const ASSET_PLACEHOLDERS: Record<AssetType, string> = {
   real_estate: "مثال: شقة في الرياض",
   land: "مثال: أرض في جدة",
   vehicle: "مثال: كامري 2023",
-  gold: "مثال: ذهب عيار 21",
+  gold: "",
+  silver: "",
   stocks: "مثال: أسهم أرامكو",
   other: "وصف الأصل",
 };
@@ -284,26 +286,7 @@ function EstateStep({
   const [mode, setMode] = useState<"total" | "detailed">(
     estate.assets.length > 0 ? "detailed" : "total"
   );
-  const [goldPrice24K, setGoldPrice24K] = useState<number>(0);
-  const [goldSourceName, setGoldSourceName] = useState("");
-  const [goldLoading, setGoldLoading] = useState(false);
-  const [manualGoldMode, setManualGoldMode] = useState(false);
-
-  const loadGoldPrice = useCallback(async () => {
-    setGoldLoading(true);
-    const result = await fetchGoldPrice(estate.currency as CurrencyCode);
-    setGoldPrice24K(result.pricePerGram24K);
-    setGoldSourceName(result.sourceName);
-    setGoldLoading(false);
-  }, [estate.currency]);
-
-  // جلب سعر الذهب عند وجود أصل ذهب
-  const hasGoldAsset = estate.assets.some((a) => a.type === "gold");
-  useEffect(() => {
-    if (hasGoldAsset && goldPrice24K === 0 && !manualGoldMode) {
-      loadGoldPrice();
-    }
-  }, [hasGoldAsset, goldPrice24K, manualGoldMode, loadGoldPrice]);
+  const currencySymbol = CURRENCIES[estate.currency as CurrencyCode]?.symbol ?? "ر.س";
 
   const afterDebts = estate.totalValue - estate.debts - estate.funeralCosts;
   const maxWasiyya = afterDebts > 0 ? Math.floor(afterDebts / 3) : 0;
@@ -372,10 +355,7 @@ function EstateStep({
           </Label>
           <select
             value={estate.currency}
-            onChange={(e) => {
-              onChange({ ...estate, currency: e.target.value });
-              setGoldPrice24K(0);
-            }}
+            onChange={(e) => onChange({ ...estate, currency: e.target.value })}
             className="h-11 w-full rounded-lg border border-border/60 bg-white px-3 text-sm"
           >
             {Object.entries(REGION_LABELS).map(([region, regionLabel]) => (
@@ -478,47 +458,44 @@ function EstateStep({
                       <Trash2 className="h-4 w-4" />
                     </button>
                   </div>
-                  {asset.type !== "gold" && (
-                    <Input
-                      placeholder={ASSET_PLACEHOLDERS[asset.type]}
-                      value={asset.description}
-                      onChange={(e) =>
-                        updateAsset(asset.id, { description: e.target.value })
-                      }
-                      className="h-10 text-sm"
-                    />
-                  )}
-
-                  {/* مقيّم الذهب */}
                   {asset.type === "gold" ? (
                     <GoldEvaluator
                       asset={asset}
-                      goldPrice24K={goldPrice24K}
-                      goldSourceName={goldSourceName}
-                      goldLoading={goldLoading}
-                      manualMode={manualGoldMode}
-                      currencySymbol={CURRENCIES[estate.currency as CurrencyCode]?.symbol ?? "ر.س"}
+                      currencySymbol={currencySymbol}
                       onUpdate={(updates) => updateAsset(asset.id, updates)}
-                      onRefresh={loadGoldPrice}
-                      onToggleManual={() => setManualGoldMode(!manualGoldMode)}
-                      onManualPrice={(price) => { setGoldPrice24K(price); setGoldSourceName("إدخال يدوي"); }}
+                    />
+                  ) : asset.type === "silver" ? (
+                    <SilverEvaluator
+                      asset={asset}
+                      currencySymbol={currencySymbol}
+                      onUpdate={(updates) => updateAsset(asset.id, updates)}
                     />
                   ) : (
-                    <div className="space-y-1">
-                      <Label className="text-xs text-muted-foreground">القيمة التقديرية</Label>
+                    <>
                       <Input
-                        type="number"
-                        min={0}
-                        placeholder="0"
-                        className="h-11 text-base"
-                        value={asset.estimatedValue || ""}
+                        placeholder={ASSET_PLACEHOLDERS[asset.type]}
+                        value={asset.description}
                         onChange={(e) =>
-                          updateAsset(asset.id, {
-                            estimatedValue: Number(e.target.value) || 0,
-                          })
+                          updateAsset(asset.id, { description: e.target.value })
                         }
+                        className="h-10 text-sm"
                       />
-                    </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs text-muted-foreground">القيمة التقديرية</Label>
+                        <Input
+                          type="number"
+                          min={0}
+                          placeholder="0"
+                          className="h-11 text-base"
+                          value={asset.estimatedValue || ""}
+                          onChange={(e) =>
+                            updateAsset(asset.id, {
+                              estimatedValue: Number(e.target.value) || 0,
+                            })
+                          }
+                        />
+                      </div>
+                    </>
                   )}
                 </div>
               );
@@ -1229,135 +1206,211 @@ function ShareCard({ share }: { share: ShareResult }) {
   );
 }
 
-// === مقيّم الذهب ===
+// === مقيّم الذهب (يدوي) ===
+
+const GOLD_KARATS = [24, 22, 21, 18] as const;
 
 function GoldEvaluator({
   asset,
-  goldPrice24K,
-  goldSourceName,
-  goldLoading,
-  manualMode,
   currencySymbol,
   onUpdate,
-  onRefresh,
-  onToggleManual,
-  onManualPrice,
 }: {
   asset: Asset;
-  goldPrice24K: number;
-  goldSourceName: string;
-  goldLoading: boolean;
-  manualMode: boolean;
   currencySymbol: string;
   onUpdate: (updates: Partial<Asset>) => void;
-  onRefresh: () => void;
-  onToggleManual: () => void;
-  onManualPrice: (price: number) => void;
 }) {
+  const [ouncePrice, setOuncePrice] = useState(0);
+  const OUNCE_TO_GRAM = 31.1035;
+  const price24K = ouncePrice > 0 ? ouncePrice / OUNCE_TO_GRAM : 0;
+
   const entries: GoldEntry[] = asset.goldEntries ?? GOLD_KARATS.map((k) => ({
     karat: k,
     weightGrams: 0,
-    pricePerGram: priceForKarat(goldPrice24K, k),
+    pricePerGram: 0,
   }));
 
-  const updateEntry = (karat: number, weightGrams: number) => {
-    const updated = entries.map((e) =>
-      e.karat === karat
-        ? { ...e, weightGrams, pricePerGram: priceForKarat(goldPrice24K, e.karat) }
-        : { ...e, pricePerGram: priceForKarat(goldPrice24K, e.karat) }
-    );
+  const recalc = (newEntries: GoldEntry[], newPrice24K: number) => {
+    const updated = newEntries.map((e) => ({
+      ...e,
+      pricePerGram: (newPrice24K * e.karat) / 24,
+    }));
     const total = updated.reduce((s, e) => s + e.weightGrams * e.pricePerGram, 0);
     onUpdate({ goldEntries: updated, estimatedValue: Math.round(total) });
   };
 
+  const handleOunceChange = (val: number) => {
+    setOuncePrice(val);
+    const p24 = val > 0 ? val / OUNCE_TO_GRAM : 0;
+    recalc(entries, p24);
+  };
+
+  const handleWeightChange = (karat: number, weight: number) => {
+    const updated = entries.map((e) =>
+      e.karat === karat ? { ...e, weightGrams: weight } : e
+    );
+    recalc(updated, price24K);
+  };
+
   return (
     <div className="space-y-3 rounded-lg border border-accent/30 bg-accent/5 p-3">
-      {/* سعر الذهب الحالي */}
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-xs font-medium text-foreground">
-            سعر الذهب (عيار 24): {goldLoading ? "جارٍ التحميل..." : `${goldPrice24K.toFixed(2)} ${currencySymbol}/غرام`}
+      {/* سعر الأونصة */}
+      <div className="space-y-1.5">
+        <Label className="text-xs font-medium text-foreground">
+          سعر أونصة الذهب ({currencySymbol})
+        </Label>
+        <Input
+          type="number"
+          min={0}
+          step={1}
+          placeholder="مثال: 11,325"
+          className="h-11 text-base"
+          value={ouncePrice || ""}
+          onChange={(e) => handleOunceChange(Number(e.target.value) || 0)}
+        />
+        {price24K > 0 && (
+          <p className="text-[11px] text-muted-foreground">
+            = {price24K.toFixed(2)} {currencySymbol}/غرام (عيار 24)
           </p>
-          {goldSourceName && (
-            <p className="text-[10px] text-muted-foreground">
-              المصدر: {goldSourceName}
-            </p>
-          )}
-        </div>
-        <div className="flex gap-1">
-          <button
-            onClick={onRefresh}
-            disabled={goldLoading}
-            className="rounded px-2 py-1 text-[10px] font-medium text-primary hover:bg-primary/10 transition-colors"
-          >
-            {goldLoading ? "..." : "تحديث"}
-          </button>
-          <button
-            onClick={onToggleManual}
-            className="rounded px-2 py-1 text-[10px] font-medium text-muted-foreground hover:bg-muted transition-colors"
-          >
-            {manualMode ? "تلقائي" : "يدوي"}
-          </button>
-        </div>
+        )}
       </div>
-
-      {/* إدخال يدوي للسعر */}
-      {manualMode && (
-        <div className="space-y-1">
-          <Label className="text-xs text-muted-foreground">سعر غرام عيار 24 ({currencySymbol})</Label>
-          <Input
-            type="number"
-            min={0}
-            step={0.01}
-            placeholder="أدخل السعر"
-            className="h-9 text-sm"
-            value={goldPrice24K || ""}
-            onChange={(e) => onManualPrice(Number(e.target.value) || 0)}
-          />
-        </div>
-      )}
 
       {/* إدخال الأوزان لكل عيار */}
       {GOLD_KARATS.map((karat) => {
         const entry = entries.find((e) => e.karat === karat);
-        const price = priceForKarat(goldPrice24K, karat);
-        const value = (entry?.weightGrams ?? 0) * price;
+        const pricePerGram = (price24K * karat) / 24;
+        const value = (entry?.weightGrams ?? 0) * pricePerGram;
         return (
           <div key={karat} className="flex items-center gap-3 rounded-lg bg-white p-2.5">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded bg-accent/20 text-xs font-bold text-accent-foreground">
-              {karat}
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-accent/20 text-xs font-bold text-accent-foreground">
+              {karat}K
             </div>
-            <div className="flex-1 space-y-1">
+            <div className="flex-1">
               <div className="flex items-center gap-2">
                 <Input
                   type="number"
                   min={0}
                   step={0.1}
                   placeholder="0"
-                  className="h-8 w-24 text-sm"
+                  className="h-9 text-sm"
                   value={entry?.weightGrams || ""}
-                  onChange={(e) => updateEntry(karat, Number(e.target.value) || 0)}
+                  onChange={(e) => handleWeightChange(karat, Number(e.target.value) || 0)}
                 />
-                <span className="text-xs text-muted-foreground">غرام</span>
+                <span className="shrink-0 text-xs text-muted-foreground">غرام</span>
               </div>
-              <p className="text-[10px] text-muted-foreground">
-                {price.toFixed(2)} {currencySymbol}/غ
-              </p>
+              {pricePerGram > 0 && (
+                <p className="mt-1 text-[10px] text-muted-foreground">
+                  {pricePerGram.toFixed(2)} {currencySymbol}/غ
+                </p>
+              )}
             </div>
-            <p className="text-sm font-semibold text-foreground">
-              {formatCurrency(Math.round(value))}
+            <p className="shrink-0 text-sm font-semibold text-foreground">
+              {value > 0 ? formatCurrency(Math.round(value)) : "—"}
             </p>
           </div>
         );
       })}
 
       {/* إجمالي الذهب */}
-      <div className="rounded-lg bg-white p-2.5 text-center">
-        <p className="text-xs text-muted-foreground">إجمالي الذهب</p>
-        <p className="text-lg font-bold text-primary">
-          {formatCurrency(asset.estimatedValue)} {currencySymbol}
+      {asset.estimatedValue > 0 && (
+        <div className="rounded-lg bg-white p-3 text-center">
+          <p className="text-xs text-muted-foreground">إجمالي الذهب</p>
+          <p className="text-lg font-bold text-primary">
+            {formatCurrency(asset.estimatedValue)} {currencySymbol}
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// === مقيّم الفضة (يدوي) ===
+
+function SilverEvaluator({
+  asset,
+  currencySymbol,
+  onUpdate,
+}: {
+  asset: Asset;
+  currencySymbol: string;
+  onUpdate: (updates: Partial<Asset>) => void;
+}) {
+  const [ouncePrice, setOuncePrice] = useState(0);
+  const OUNCE_TO_GRAM = 31.1035;
+  const pricePerGram = ouncePrice > 0 ? ouncePrice / OUNCE_TO_GRAM : 0;
+
+  const entry: SilverEntry = asset.silverEntry ?? { weightGrams: 0, pricePerGram: 0 };
+
+  const recalc = (weight: number, ppg: number) => {
+    const total = Math.round(weight * ppg);
+    onUpdate({ silverEntry: { weightGrams: weight, pricePerGram: ppg }, estimatedValue: total });
+  };
+
+  const handleOunceChange = (val: number) => {
+    setOuncePrice(val);
+    const ppg = val > 0 ? val / OUNCE_TO_GRAM : 0;
+    recalc(entry.weightGrams, ppg);
+  };
+
+  const handleWeightChange = (weight: number) => {
+    recalc(weight, pricePerGram);
+  };
+
+  return (
+    <div className="space-y-3 rounded-lg border border-border/60 bg-muted/30 p-3">
+      {/* سعر الأونصة */}
+      <div className="space-y-1.5">
+        <Label className="text-xs font-medium text-foreground">
+          سعر أونصة الفضة ({currencySymbol})
+        </Label>
+        <Input
+          type="number"
+          min={0}
+          step={0.1}
+          placeholder="مثال: 120"
+          className="h-11 text-base"
+          value={ouncePrice || ""}
+          onChange={(e) => handleOunceChange(Number(e.target.value) || 0)}
+        />
+        {pricePerGram > 0 && (
+          <p className="text-[11px] text-muted-foreground">
+            = {pricePerGram.toFixed(2)} {currencySymbol}/غرام
+          </p>
+        )}
+      </div>
+
+      {/* الوزن */}
+      <div className="flex items-center gap-3 rounded-lg bg-white p-2.5">
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-muted text-xs font-bold text-muted-foreground">
+          فضة
+        </div>
+        <div className="flex-1">
+          <div className="flex items-center gap-2">
+            <Input
+              type="number"
+              min={0}
+              step={0.1}
+              placeholder="0"
+              className="h-9 text-sm"
+              value={entry.weightGrams || ""}
+              onChange={(e) => handleWeightChange(Number(e.target.value) || 0)}
+            />
+            <span className="shrink-0 text-xs text-muted-foreground">غرام</span>
+          </div>
+        </div>
+        <p className="shrink-0 text-sm font-semibold text-foreground">
+          {asset.estimatedValue > 0 ? formatCurrency(asset.estimatedValue) : "—"}
         </p>
       </div>
+
+      {/* إجمالي */}
+      {asset.estimatedValue > 0 && (
+        <div className="rounded-lg bg-white p-3 text-center">
+          <p className="text-xs text-muted-foreground">إجمالي الفضة</p>
+          <p className="text-lg font-bold text-primary">
+            {formatCurrency(asset.estimatedValue)} {currencySymbol}
+          </p>
+        </div>
+      )}
     </div>
   );
 }

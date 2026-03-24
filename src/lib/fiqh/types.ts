@@ -41,12 +41,19 @@ export type AssetType =
   | "land"
   | "vehicle"
   | "gold"
+  | "silver"
   | "stocks"
   | "other";
 
 /** إدخال ذهب حسب العيار */
 export interface GoldEntry {
   karat: 24 | 22 | 21 | 18;
+  weightGrams: number;
+  pricePerGram: number;
+}
+
+/** إدخال فضة */
+export interface SilverEntry {
   weightGrams: number;
   pricePerGram: number;
 }
@@ -58,6 +65,7 @@ export interface Asset {
   description: string;
   estimatedValue: number;
   goldEntries?: GoldEntry[];
+  silverEntry?: SilverEntry;
 }
 
 /** أسماء أنواع الأصول */
@@ -66,7 +74,8 @@ export const ASSET_TYPE_LABELS: Record<AssetType, string> = {
   real_estate: "عقارات ومنازل",
   land: "أراضي",
   vehicle: "سيارات ومركبات",
-  gold: "ذهب ومجوهرات",
+  gold: "ذهب",
+  silver: "فضة",
   stocks: "أسهم واستثمارات",
   other: "أخرى",
 };
