@@ -43,17 +43,13 @@ export function Footer() {
             </ul>
           </div>
 
-          {/* العمود 3: الآيات */}
+          {/* العمود 3: حديث نبوي */}
           <div>
-            <p className="mb-2 font-semibold text-foreground">من القرآن الكريم</p>
+            <p className="mb-2 font-semibold text-foreground">من السنة النبوية</p>
             <p className="leading-relaxed text-muted-foreground">
-              ﴿ لِّلرِّجَالِ نَصِيبٌ مِّمَّا تَرَكَ الْوَالِدَانِ وَالْأَقْرَبُونَ ﴾
+              «تعلَّموا الفرائضَ وعلِّموها الناسَ، فإنَّه نصفُ العلمِ، وهو يُنسى، وهو أوَّلُ شيءٍ يُنزعُ من أمَّتي»
             </p>
-            <p className="mt-1 text-xs text-muted-foreground/70">سورة النساء: 7</p>
-            <p className="mt-3 leading-relaxed text-muted-foreground">
-              ﴿ وَلِأَبَوَيْهِ لِكُلِّ وَاحِدٍ مِّنْهُمَا السُّدُسُ مِمَّا تَرَكَ إِن كَانَ لَهُ وَلَدٌ ﴾
-            </p>
-            <p className="mt-1 text-xs text-muted-foreground/70">سورة النساء: 11</p>
+            <p className="mt-1 text-xs text-muted-foreground/70">رواه ابن ماجه والدارقطني عن أبي هريرة رضي الله عنه</p>
           </div>
         </div>
 
