@@ -57,7 +57,7 @@ import type {
   GoldEntry,
 } from "@/lib/fiqh/types";
 import { HEIR_LABELS, ASSET_TYPE_LABELS } from "@/lib/fiqh/types";
-import { CURRENCIES, type CurrencyCode } from "@/lib/currencies";
+import { CURRENCIES, REGION_LABELS, type CurrencyCode } from "@/lib/currencies";
 import { fetchGoldPrice, priceForKarat, GOLD_KARATS } from "@/lib/gold-api";
 import { toNumber } from "@/lib/fiqh/fraction";
 
@@ -374,14 +374,20 @@ function EstateStep({
             value={estate.currency}
             onChange={(e) => {
               onChange({ ...estate, currency: e.target.value });
-              setGoldPrice24K(0); // إعادة جلب سعر الذهب بالعملة الجديدة
+              setGoldPrice24K(0);
             }}
             className="h-11 w-full rounded-lg border border-border/60 bg-white px-3 text-sm"
           >
-            {Object.entries(CURRENCIES).map(([code, info]) => (
-              <option key={code} value={code}>
-                {info.label} ({info.symbol})
-              </option>
+            {Object.entries(REGION_LABELS).map(([region, regionLabel]) => (
+              <optgroup key={region} label={regionLabel}>
+                {Object.entries(CURRENCIES)
+                  .filter(([, info]) => info.region === region)
+                  .map(([code, info]) => (
+                    <option key={code} value={code}>
+                      {info.label} ({info.symbol})
+                    </option>
+                  ))}
+              </optgroup>
             ))}
           </select>
         </div>
