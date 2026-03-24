@@ -392,23 +392,29 @@ function EstateStep({
         <div className="flex gap-2 rounded-lg bg-muted/50 p-1">
           <button
             onClick={() => switchMode("total")}
-            className={`flex-1 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+            className={`flex-1 rounded-md px-3 py-2.5 text-center transition-colors ${
               mode === "total"
                 ? "bg-white text-foreground shadow-sm"
                 : "text-muted-foreground hover:text-foreground"
             }`}
           >
-            مبلغ إجمالي
+            <span className="text-sm font-medium">مبلغ إجمالي</span>
+            <span className="mt-0.5 block text-[11px] text-muted-foreground">
+              التركة نقدية فقط
+            </span>
           </button>
           <button
             onClick={() => switchMode("detailed")}
-            className={`flex-1 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+            className={`flex-1 rounded-md px-3 py-2.5 text-center transition-colors ${
               mode === "detailed"
                 ? "bg-white text-foreground shadow-sm"
                 : "text-muted-foreground hover:text-foreground"
             }`}
           >
-            تفصيل الأصول
+            <span className="text-sm font-medium">تفصيل الأصول</span>
+            <span className="mt-0.5 block text-[11px] text-muted-foreground">
+              نقود + عقارات + ذهب + أخرى
+            </span>
           </button>
         </div>
 
