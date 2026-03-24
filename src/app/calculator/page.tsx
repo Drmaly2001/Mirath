@@ -43,6 +43,7 @@ import {
   Banknote,
   Plus,
   Trash2,
+  FileText,
 } from "lucide-react";
 import { calculateInheritance } from "@/lib/fiqh/engine";
 import { formatCurrency, fractionToArabicName } from "@/lib/utils";
@@ -933,6 +934,128 @@ function ResultsView({
     URL.revokeObjectURL(url);
   };
 
+  const handleDownloadPDF = async () => {
+    const { jsPDF } = await import("jspdf");
+    const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+
+    // تسجيل خط يدعم العربية
+    doc.setFont("Helvetica");
+    const pageWidth = doc.internal.pageSize.getWidth();
+    let y = 20;
+
+    // عنوان
+    doc.setFontSize(18);
+    doc.setTextColor(6, 95, 70);
+    doc.text("Mirath", pageWidth / 2, y, { align: "center" });
+    y += 8;
+    doc.setFontSize(10);
+    doc.setTextColor(100);
+    doc.text(new Date().toLocaleDateString("ar-SA"), pageWidth / 2, y, { align: "center" });
+    y += 12;
+
+    // خط فاصل
+    doc.setDrawColor(6, 95, 70);
+    doc.setLineWidth(0.5);
+    doc.line(20, y, pageWidth - 20, y);
+    y += 10;
+
+    // صافي التركة
+    doc.setFontSize(12);
+    doc.setTextColor(0);
+    doc.text(`Net Estate: ${formatCurrency(netEstate)}`, pageWidth / 2, y, { align: "center" });
+    y += 12;
+
+    // تنبيهات
+    if (result.awlApplied && result.awlDetails) {
+      doc.setFontSize(9);
+      doc.setTextColor(180, 100, 0);
+      doc.text(`Awl: ${result.awlDetails.originalBase} -> ${result.awlDetails.newBase}`, pageWidth / 2, y, { align: "center" });
+      y += 8;
+    }
+    if (result.raddApplied) {
+      doc.setFontSize(9);
+      doc.setTextColor(180, 100, 0);
+      doc.text("Radd applied", pageWidth / 2, y, { align: "center" });
+      y += 8;
+    }
+
+    // جدول الأنصبة
+    doc.setFontSize(11);
+    doc.setTextColor(0);
+
+    // رؤوس الأعمدة
+    const col1 = 20;
+    const col2 = 70;
+    const col3 = 110;
+    const col4 = 150;
+
+    doc.setFont("Helvetica", "bold");
+    doc.text("Heir", col1, y);
+    doc.text("Share", col2, y);
+    doc.text("Percentage", col3, y);
+    doc.text("Amount", col4, y);
+    y += 2;
+    doc.setLineWidth(0.2);
+    doc.line(col1, y, pageWidth - 20, y);
+    y += 6;
+
+    doc.setFont("Helvetica", "normal");
+    doc.setFontSize(10);
+
+    for (const share of result.shares) {
+      if (y > 270) {
+        doc.addPage();
+        y = 20;
+      }
+      const name = HEIR_LABELS[share.heir];
+      const countLabel = share.count > 1 ? ` (${share.count})` : "";
+      const pct = (toNumber(share.fraction) * 100).toFixed(2) + "%";
+      const frac = `${share.fraction.num}/${share.fraction.den}`;
+
+      doc.text(name + countLabel, col1, y);
+      doc.text(frac, col2, y);
+      doc.text(pct, col3, y);
+      doc.text(formatCurrency(share.amount), col4, y);
+
+      if (share.count > 1) {
+        y += 5;
+        doc.setFontSize(8);
+        doc.setTextColor(120);
+        doc.text(`(${formatCurrency(share.perPersonAmount)} per person)`, col4, y);
+        doc.setFontSize(10);
+        doc.setTextColor(0);
+      }
+      y += 8;
+    }
+
+    // المحجوبون
+    if (result.hajbList.length > 0) {
+      y += 4;
+      doc.setLineWidth(0.2);
+      doc.line(col1, y, pageWidth - 20, y);
+      y += 6;
+      doc.setFont("Helvetica", "bold");
+      doc.setFontSize(10);
+      doc.text("Blocked Heirs:", col1, y);
+      y += 6;
+      doc.setFont("Helvetica", "normal");
+      doc.setFontSize(9);
+      doc.setTextColor(180, 50, 50);
+      for (const h of result.hajbList) {
+        if (y > 270) { doc.addPage(); y = 20; }
+        doc.text(`${HEIR_LABELS[h.heir]}: ${h.explanation}`, col1, y);
+        y += 6;
+      }
+    }
+
+    // ذيل الصفحة
+    doc.setTextColor(150);
+    doc.setFontSize(8);
+    doc.text("drmliAi.com — Mirath", pageWidth / 2, 287, { align: "center" });
+
+    doc.save(`Mirath-${new Date().toISOString().slice(0, 10)}.pdf`);
+  };
+
   const handleShare = async () => {
     const text = buildPlainText();
 
@@ -961,14 +1084,18 @@ function ResultsView({
   return (
     <div className="space-y-4">
       {/* أزرار الإجراءات */}
-      <div className="flex gap-2">
-        <Button variant="outline" size="sm" onClick={handlePrint} className="gap-2 flex-1">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+        <Button variant="outline" size="sm" onClick={handlePrint} className="gap-2">
           <Printer className="h-4 w-4" />
           طباعة
         </Button>
-        <Button variant="outline" size="sm" onClick={handleDownload} className="gap-2 flex-1">
+        <Button variant="outline" size="sm" onClick={handleDownloadPDF} className="gap-2">
+          <FileText className="h-4 w-4" />
+          PDF
+        </Button>
+        <Button variant="outline" size="sm" onClick={handleDownload} className="gap-2">
           <Download className="h-4 w-4" />
-          تنزيل
+          تنزيل نصي
         </Button>
         <Button
           variant="outline"
