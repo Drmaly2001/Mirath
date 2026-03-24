@@ -69,7 +69,7 @@ export default function Home() {
             <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
               <Link href="/calculator">
                 <Button size="lg" className="gap-2 text-base">
-                  ابدأ الحساب مجاناً
+                  ابدأ الحساب الآن
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
               </Link>
