@@ -43,18 +43,33 @@ export function Footer() {
             </ul>
           </div>
 
-          {/* العمود 3: الآية */}
+          {/* العمود 3: الآيات */}
           <div>
             <p className="mb-2 font-semibold text-foreground">من القرآن الكريم</p>
             <p className="leading-relaxed text-muted-foreground">
               ﴿ لِّلرِّجَالِ نَصِيبٌ مِّمَّا تَرَكَ الْوَالِدَانِ وَالْأَقْرَبُونَ ﴾
             </p>
             <p className="mt-1 text-xs text-muted-foreground/70">سورة النساء: 7</p>
+            <p className="mt-3 leading-relaxed text-muted-foreground">
+              ﴿ وَلِأَبَوَيْهِ لِكُلِّ وَاحِدٍ مِّنْهُمَا السُّدُسُ مِمَّا تَرَكَ إِن كَانَ لَهُ وَلَدٌ ﴾
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground/70">سورة النساء: 11</p>
           </div>
         </div>
 
         <div className="mt-8 border-t border-border/40 pt-4 text-center text-xs text-muted-foreground">
-          مجاني ومفتوح المصدر — صُنع بإتقان لخدمة المسلمين
+          <p>مجاني ومفتوح المصدر — صُنع بإتقان لخدمة المسلمين</p>
+          <p className="mt-2">
+            تم التطوير بواسطة{" "}
+            <a
+              href="https://drmliAi.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-medium text-primary hover:underline"
+            >
+              drmliAi.com
+            </a>
+          </p>
         </div>
       </div>
     </footer>
