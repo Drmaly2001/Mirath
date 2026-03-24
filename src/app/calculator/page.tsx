@@ -992,53 +992,72 @@ function ResultsView({
     doc.line(20, y, rMargin, y);
     y += 12;
 
-    // ═══ تفصيل الأصول ═══
+    // ═══ بيان التركة ═══
+    doc.setFontSize(12);
+    doc.setTextColor(6, 95, 70);
+    rtl("بيان التركة", rMargin, y);
+    y += 8;
+
+    // تفصيل الأصول أو مبلغ إجمالي
+    doc.setFontSize(10);
+    doc.setTextColor(50);
+
     if (estate.assets.length > 0) {
-      doc.setFontSize(11);
-      doc.setTextColor(6, 95, 70);
-      rtl("تفصيل أصول التركة", rMargin, y);
-      y += 7;
-      doc.setFontSize(10);
-      doc.setTextColor(50);
       for (const asset of estate.assets) {
-        if (y > 265) { doc.addPage(); y = 20; }
+        if (y > 260) { doc.addPage(); y = 20; }
         const typeName = ASSET_TYPE_LABELS[asset.type] || asset.type;
-        const desc = asset.description ? ` — ${asset.description}` : "";
-        rtl(`${typeName}${desc}: ${formatCurrency(asset.estimatedValue)}`, rMargin, y);
+        const desc = asset.description ? ` (${asset.description})` : "";
+        rtl(`${typeName}${desc}`, rMargin, y);
+        rtl(formatCurrency(asset.estimatedValue), 55, y);
         y += 6;
       }
-      y += 3;
-      doc.setDrawColor(220);
+      y += 2;
+      doc.setDrawColor(180);
       doc.setLineWidth(0.2);
-      doc.line(20, y, rMargin, y);
-      y += 4;
-      doc.setFontSize(10);
-      doc.setTextColor(80);
-      rtl(`إجمالي الأصول: ${formatCurrency(estate.totalValue)}`, rMargin, y);
+      doc.line(55, y, rMargin, y);
       y += 5;
+      doc.setTextColor(30);
+      rtl("إجمالي الأصول", rMargin, y);
+      rtl(formatCurrency(estate.totalValue), 55, y);
+      y += 7;
     } else {
-      doc.setFontSize(10);
-      doc.setTextColor(80);
-      rtl(`إجمالي التركة (نقدي): ${formatCurrency(estate.totalValue)}`, rMargin, y);
-      y += 5;
+      rtl("إجمالي التركة", rMargin, y);
+      rtl(formatCurrency(estate.totalValue), 55, y);
+      y += 7;
     }
 
-    // الخصومات
-    if (estate.funeralCosts > 0 || estate.debts > 0 || estate.wasiyya > 0) {
-      doc.setFontSize(9);
-      doc.setTextColor(120);
-      if (estate.funeralCosts > 0) { rtl(`- تكاليف التجهيز: ${formatCurrency(estate.funeralCosts)}`, rMargin, y); y += 5; }
-      if (estate.debts > 0) { rtl(`- الديون: ${formatCurrency(estate.debts)}`, rMargin, y); y += 5; }
-      if (estate.wasiyya > 0) { rtl(`- الوصية: ${formatCurrency(estate.wasiyya)}`, rMargin, y); y += 5; }
-    }
+    // الخصومات (تظهر دائماً)
+    doc.setFontSize(10);
+    doc.setTextColor(6, 95, 70);
+    rtl("الخصومات", rMargin, y);
+    y += 7;
 
-    y += 3;
+    doc.setTextColor(80);
+    doc.setFontSize(10);
+
+    rtl("تكاليف التجهيز والدفن", rMargin, y);
+    rtl(estate.funeralCosts > 0 ? `(${formatCurrency(estate.funeralCosts)})` : "—", 55, y);
+    y += 6;
+
+    rtl("الديون", rMargin, y);
+    rtl(estate.debts > 0 ? `(${formatCurrency(estate.debts)})` : "—", 55, y);
+    y += 6;
+
+    rtl("الوصية", rMargin, y);
+    rtl(estate.wasiyya > 0 ? `(${formatCurrency(estate.wasiyya)})` : "—", 55, y);
+    y += 4;
+
+    doc.setDrawColor(6, 95, 70);
+    doc.setLineWidth(0.4);
+    doc.line(55, y, rMargin, y);
+    y += 6;
 
     // ═══ صافي التركة ═══
     doc.setFontSize(14);
     doc.setTextColor(6, 95, 70);
-    rtl(`صافي التركة: ${formatCurrency(netEstate)}`, rMargin, y);
-    y += 12;
+    rtl("صافي التركة القابل للتوزيع", rMargin, y);
+    rtl(formatCurrency(netEstate), 55, y);
+    y += 14;
 
     // تنبيهات
     doc.setFontSize(10);
