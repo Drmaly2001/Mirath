@@ -874,6 +874,17 @@ function ResultsView({
         const typeName = ASSET_TYPE_LABELS[asset.type] || asset.type;
         const desc = asset.description ? ` — ${asset.description}` : "";
         lines.push(`  ${typeName}${desc}: ${formatCurrency(asset.estimatedValue)}`);
+        if (asset.type === "gold" && asset.goldEntries) {
+          for (const ge of asset.goldEntries) {
+            if (ge.weightGrams > 0) {
+              lines.push(`    عيار ${ge.karat}: ${ge.weightGrams} غرام × ${ge.pricePerGram.toFixed(2)} = ${formatCurrency(Math.round(ge.weightGrams * ge.pricePerGram))}`);
+            }
+          }
+        }
+        if (asset.type === "silver" && asset.silverEntry && asset.silverEntry.weightGrams > 0) {
+          const se = asset.silverEntry;
+          lines.push(`    فضة: ${se.weightGrams} غرام × ${se.pricePerGram.toFixed(2)} = ${formatCurrency(Math.round(se.weightGrams * se.pricePerGram))}`);
+        }
       }
       lines.push(`  الإجمالي: ${formatCurrency(estate.totalValue)}`);
     } else {
@@ -1004,12 +1015,39 @@ function ResultsView({
 
     if (estate.assets.length > 0) {
       for (const asset of estate.assets) {
-        if (y > 260) { doc.addPage(); y = 20; }
+        if (y > 255) { doc.addPage(); y = 20; }
         const typeName = ASSET_TYPE_LABELS[asset.type] || asset.type;
         const desc = asset.description ? ` (${asset.description})` : "";
         rtl(`${typeName}${desc}`, rMargin, y);
         rtl(formatCurrency(asset.estimatedValue), 55, y);
         y += 6;
+
+        // تفصيل الذهب
+        if (asset.type === "gold" && asset.goldEntries) {
+          doc.setFontSize(8);
+          doc.setTextColor(100);
+          for (const ge of asset.goldEntries) {
+            if (ge.weightGrams > 0) {
+              const val = Math.round(ge.weightGrams * ge.pricePerGram);
+              rtl(`عيار ${ge.karat}: ${ge.weightGrams} غرام × ${ge.pricePerGram.toFixed(2)} = ${formatCurrency(val)}`, rMargin - 10, y);
+              y += 5;
+            }
+          }
+          doc.setFontSize(10);
+          doc.setTextColor(50);
+        }
+
+        // تفصيل الفضة
+        if (asset.type === "silver" && asset.silverEntry && asset.silverEntry.weightGrams > 0) {
+          doc.setFontSize(8);
+          doc.setTextColor(100);
+          const se = asset.silverEntry;
+          const val = Math.round(se.weightGrams * se.pricePerGram);
+          rtl(`فضة: ${se.weightGrams} غرام × ${se.pricePerGram.toFixed(2)} = ${formatCurrency(val)}`, rMargin - 10, y);
+          y += 5;
+          doc.setFontSize(10);
+          doc.setTextColor(50);
+        }
       }
       y += 2;
       doc.setDrawColor(180);
@@ -1236,11 +1274,27 @@ function ResultsView({
               <div className="mb-4 rounded-lg border border-border/40 p-3">
                 <p className="mb-2 text-xs font-semibold text-muted-foreground">تفصيل أصول التركة</p>
                 {estate.assets.map((asset) => (
-                  <div key={asset.id} className="flex justify-between py-1 text-sm">
-                    <span className="text-foreground">
-                      {ASSET_TYPE_LABELS[asset.type]}{asset.description ? ` — ${asset.description}` : ""}
-                    </span>
-                    <span className="font-medium text-foreground">{formatCurrency(asset.estimatedValue)}</span>
+                  <div key={asset.id}>
+                    <div className="flex justify-between py-1 text-sm">
+                      <span className="text-foreground">
+                        {ASSET_TYPE_LABELS[asset.type]}{asset.description ? ` — ${asset.description}` : ""}
+                      </span>
+                      <span className="font-medium text-foreground">{formatCurrency(asset.estimatedValue)}</span>
+                    </div>
+                    {asset.type === "gold" && asset.goldEntries && asset.goldEntries.some(g => g.weightGrams > 0) && (
+                      <div className="mb-1 mr-4 space-y-0.5">
+                        {asset.goldEntries.filter(g => g.weightGrams > 0).map((ge) => (
+                          <p key={ge.karat} className="text-[11px] text-muted-foreground">
+                            عيار {ge.karat}: {ge.weightGrams} غرام × {ge.pricePerGram.toFixed(2)} = {formatCurrency(Math.round(ge.weightGrams * ge.pricePerGram))}
+                          </p>
+                        ))}
+                      </div>
+                    )}
+                    {asset.type === "silver" && asset.silverEntry && asset.silverEntry.weightGrams > 0 && (
+                      <p className="mb-1 mr-4 text-[11px] text-muted-foreground">
+                        فضة: {asset.silverEntry.weightGrams} غرام × {asset.silverEntry.pricePerGram.toFixed(2)} = {formatCurrency(Math.round(asset.silverEntry.weightGrams * asset.silverEntry.pricePerGram))}
+                      </p>
+                    )}
                   </div>
                 ))}
                 <Separator className="my-2" />
