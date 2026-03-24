@@ -211,7 +211,7 @@ export default function CalculatorPage() {
             <SiblingsStep updateHeir={updateHeir} getHeir={getHeir} />
           )}
           {step === "results" && result && (
-            <ResultsView result={result} netEstate={result.netEstate} />
+            <ResultsView result={result} netEstate={result.netEstate} estate={estate} />
           )}
 
           {/* Navigation */}
@@ -850,9 +850,11 @@ function SiblingsStep({
 function ResultsView({
   result,
   netEstate,
+  estate,
 }: {
   result: CalculationResult;
   netEstate: number;
+  estate: EstateInput;
 }) {
   const printRef = useRef<HTMLDivElement>(null);
   const [shareSuccess, setShareSuccess] = useState(false);
@@ -863,9 +865,27 @@ function ResultsView({
       "    ميراث — نتائج توزيع التركة",
       "══════════════════════════════",
       "",
-      `صافي التركة: ${formatCurrency(netEstate)}`,
-      "",
     ];
+
+    // تفصيل الأصول
+    if (estate.assets.length > 0) {
+      lines.push("─── تفصيل أصول التركة ───");
+      for (const asset of estate.assets) {
+        const typeName = ASSET_TYPE_LABELS[asset.type] || asset.type;
+        const desc = asset.description ? ` — ${asset.description}` : "";
+        lines.push(`  ${typeName}${desc}: ${formatCurrency(asset.estimatedValue)}`);
+      }
+      lines.push(`  الإجمالي: ${formatCurrency(estate.totalValue)}`);
+    } else {
+      lines.push(`إجمالي التركة (نقدي): ${formatCurrency(estate.totalValue)}`);
+    }
+    if (estate.funeralCosts > 0) lines.push(`  - تكاليف التجهيز: ${formatCurrency(estate.funeralCosts)}`);
+    if (estate.debts > 0) lines.push(`  - الديون: ${formatCurrency(estate.debts)}`);
+    if (estate.wasiyya > 0) lines.push(`  - الوصية: ${formatCurrency(estate.wasiyya)}`);
+
+    lines.push("");
+    lines.push(`صافي التركة: ${formatCurrency(netEstate)}`);
+    lines.push("");
 
     if (result.specialCase) {
       lines.push(`حالة خاصة: ${result.specialCase.nameArabic}`);
@@ -915,7 +935,7 @@ function ResultsView({
     lines.push(`   ${new Date().toLocaleDateString("ar-SA")}`);
 
     return lines.join("\n");
-  }, [result, netEstate]);
+  }, [result, netEstate, estate]);
 
   const handlePrint = () => {
     window.print();
@@ -971,6 +991,48 @@ function ResultsView({
     doc.setLineWidth(0.6);
     doc.line(20, y, rMargin, y);
     y += 12;
+
+    // ═══ تفصيل الأصول ═══
+    if (estate.assets.length > 0) {
+      doc.setFontSize(11);
+      doc.setTextColor(6, 95, 70);
+      rtl("تفصيل أصول التركة", rMargin, y);
+      y += 7;
+      doc.setFontSize(10);
+      doc.setTextColor(50);
+      for (const asset of estate.assets) {
+        if (y > 265) { doc.addPage(); y = 20; }
+        const typeName = ASSET_TYPE_LABELS[asset.type] || asset.type;
+        const desc = asset.description ? ` — ${asset.description}` : "";
+        rtl(`${typeName}${desc}: ${formatCurrency(asset.estimatedValue)}`, rMargin, y);
+        y += 6;
+      }
+      y += 3;
+      doc.setDrawColor(220);
+      doc.setLineWidth(0.2);
+      doc.line(20, y, rMargin, y);
+      y += 4;
+      doc.setFontSize(10);
+      doc.setTextColor(80);
+      rtl(`إجمالي الأصول: ${formatCurrency(estate.totalValue)}`, rMargin, y);
+      y += 5;
+    } else {
+      doc.setFontSize(10);
+      doc.setTextColor(80);
+      rtl(`إجمالي التركة (نقدي): ${formatCurrency(estate.totalValue)}`, rMargin, y);
+      y += 5;
+    }
+
+    // الخصومات
+    if (estate.funeralCosts > 0 || estate.debts > 0 || estate.wasiyya > 0) {
+      doc.setFontSize(9);
+      doc.setTextColor(120);
+      if (estate.funeralCosts > 0) { rtl(`- تكاليف التجهيز: ${formatCurrency(estate.funeralCosts)}`, rMargin, y); y += 5; }
+      if (estate.debts > 0) { rtl(`- الديون: ${formatCurrency(estate.debts)}`, rMargin, y); y += 5; }
+      if (estate.wasiyya > 0) { rtl(`- الوصية: ${formatCurrency(estate.wasiyya)}`, rMargin, y); y += 5; }
+    }
+
+    y += 3;
 
     // ═══ صافي التركة ═══
     doc.setFontSize(14);
@@ -1150,6 +1212,33 @@ function ResultsView({
             </CardTitle>
           </CardHeader>
           <CardContent>
+            {/* تفصيل الأصول */}
+            {estate.assets.length > 0 && (
+              <div className="mb-4 rounded-lg border border-border/40 p-3">
+                <p className="mb-2 text-xs font-semibold text-muted-foreground">تفصيل أصول التركة</p>
+                {estate.assets.map((asset) => (
+                  <div key={asset.id} className="flex justify-between py-1 text-sm">
+                    <span className="text-foreground">
+                      {ASSET_TYPE_LABELS[asset.type]}{asset.description ? ` — ${asset.description}` : ""}
+                    </span>
+                    <span className="font-medium text-foreground">{formatCurrency(asset.estimatedValue)}</span>
+                  </div>
+                ))}
+                <Separator className="my-2" />
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">إجمالي الأصول</span>
+                  <span className="font-semibold">{formatCurrency(estate.totalValue)}</span>
+                </div>
+                {(estate.funeralCosts > 0 || estate.debts > 0 || estate.wasiyya > 0) && (
+                  <div className="mt-1 space-y-0.5 text-xs text-muted-foreground">
+                    {estate.funeralCosts > 0 && <div className="flex justify-between"><span>- تكاليف التجهيز</span><span>{formatCurrency(estate.funeralCosts)}</span></div>}
+                    {estate.debts > 0 && <div className="flex justify-between"><span>- الديون</span><span>{formatCurrency(estate.debts)}</span></div>}
+                    {estate.wasiyya > 0 && <div className="flex justify-between"><span>- الوصية</span><span>{formatCurrency(estate.wasiyya)}</span></div>}
+                  </div>
+                )}
+              </div>
+            )}
+
             <div className="mb-4 rounded-lg bg-primary/5 p-4 text-center print:bg-gray-50">
               <p className="text-sm text-muted-foreground">صافي التركة</p>
               <p className="text-2xl font-bold text-primary print:text-black">
