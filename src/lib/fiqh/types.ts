@@ -44,12 +44,20 @@ export type AssetType =
   | "stocks"
   | "other";
 
+/** إدخال ذهب حسب العيار */
+export interface GoldEntry {
+  karat: 24 | 22 | 21 | 18;
+  weightGrams: number;
+  pricePerGram: number;
+}
+
 /** أصل من أصول التركة */
 export interface Asset {
   id: string;
   type: AssetType;
   description: string;
   estimatedValue: number;
+  goldEntries?: GoldEntry[];
 }
 
 /** أسماء أنواع الأصول */
@@ -67,6 +75,7 @@ export const ASSET_TYPE_LABELS: Record<AssetType, string> = {
 export interface EstateInput {
   totalValue: number;
   assets: Asset[];
+  currency: string;
   debts: number;
   wasiyya: number;
   funeralCosts: number;
