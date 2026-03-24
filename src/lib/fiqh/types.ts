@@ -34,9 +34,39 @@ export interface HeirInput {
   count: number;
 }
 
+/** أنواع الأصول */
+export type AssetType =
+  | "cash"
+  | "real_estate"
+  | "land"
+  | "vehicle"
+  | "gold"
+  | "stocks"
+  | "other";
+
+/** أصل من أصول التركة */
+export interface Asset {
+  id: string;
+  type: AssetType;
+  description: string;
+  estimatedValue: number;
+}
+
+/** أسماء أنواع الأصول */
+export const ASSET_TYPE_LABELS: Record<AssetType, string> = {
+  cash: "نقود وأرصدة بنكية",
+  real_estate: "عقارات ومنازل",
+  land: "أراضي",
+  vehicle: "سيارات ومركبات",
+  gold: "ذهب ومجوهرات",
+  stocks: "أسهم واستثمارات",
+  other: "أخرى",
+};
+
 /** مدخلات التركة */
 export interface EstateInput {
   totalValue: number;
+  assets: Asset[];
   debts: number;
   wasiyya: number;
   funeralCosts: number;

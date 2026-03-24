@@ -34,6 +34,15 @@ import {
   Baby,
   UserRound,
   Crown,
+  Home,
+  MapPin,
+  Car,
+  Gem,
+  TrendingUp,
+  Package,
+  Banknote,
+  Plus,
+  Trash2,
 } from "lucide-react";
 import { calculateInheritance } from "@/lib/fiqh/engine";
 import { formatCurrency, fractionToArabicName } from "@/lib/utils";
@@ -43,8 +52,10 @@ import type {
   HeirType,
   CalculationResult,
   ShareResult,
+  AssetType,
+  Asset,
 } from "@/lib/fiqh/types";
-import { HEIR_LABELS } from "@/lib/fiqh/types";
+import { HEIR_LABELS, ASSET_TYPE_LABELS } from "@/lib/fiqh/types";
 import { toNumber } from "@/lib/fiqh/fraction";
 
 type Step = "estate" | "spouse" | "children" | "parents" | "siblings" | "results";
@@ -63,6 +74,7 @@ export default function CalculatorPage() {
   const [step, setStep] = useState<Step>("estate");
   const [estate, setEstate] = useState<EstateInput>({
     totalValue: 0,
+    assets: [],
     debts: 0,
     wasiyya: 0,
     funeralCosts: 0,
@@ -133,7 +145,7 @@ export default function CalculatorPage() {
 
   const handleReset = () => {
     setStep("estate");
-    setEstate({ totalValue: 0, debts: 0, wasiyya: 0, funeralCosts: 0 });
+    setEstate({ totalValue: 0, assets: [], debts: 0, wasiyya: 0, funeralCosts: 0 });
     setHeirsMap({});
     setResult(null);
     setError(null);
@@ -238,6 +250,26 @@ export default function CalculatorPage() {
 
 // === Step Components ===
 
+const ASSET_ICONS: Record<AssetType, typeof Landmark> = {
+  cash: Banknote,
+  real_estate: Home,
+  land: MapPin,
+  vehicle: Car,
+  gold: Gem,
+  stocks: TrendingUp,
+  other: Package,
+};
+
+const ASSET_PLACEHOLDERS: Record<AssetType, string> = {
+  cash: "مثال: رصيد بنك الراجحي",
+  real_estate: "مثال: شقة في الرياض",
+  land: "مثال: أرض في جدة",
+  vehicle: "مثال: كامري 2023",
+  gold: "مثال: ذهب عيار 21",
+  stocks: "مثال: أسهم أرامكو",
+  other: "وصف الأصل",
+};
+
 function EstateStep({
   estate,
   onChange,
@@ -245,18 +277,58 @@ function EstateStep({
   estate: EstateInput;
   onChange: (e: EstateInput) => void;
 }) {
+  const [mode, setMode] = useState<"total" | "detailed">(
+    estate.assets.length > 0 ? "detailed" : "total"
+  );
+
   const afterDebts = estate.totalValue - estate.debts - estate.funeralCosts;
   const maxWasiyya = afterDebts > 0 ? Math.floor(afterDebts / 3) : 0;
   const wasiyyaExceeded = estate.wasiyya > maxWasiyya && afterDebts > 0;
   const net = Math.max(0, afterDebts - estate.wasiyya);
 
   const handleWasiyyaChange = (value: number) => {
-    // نسمح بالإدخال لكن نقيّده بالثلث
     if (value > maxWasiyya && afterDebts > 0) {
       onChange({ ...estate, wasiyya: maxWasiyya });
     } else {
       onChange({ ...estate, wasiyya: value });
     }
+  };
+
+  const addAsset = () => {
+    const newAsset: Asset = {
+      id: Date.now().toString(),
+      type: "cash",
+      description: "",
+      estimatedValue: 0,
+    };
+    const newAssets = [...estate.assets, newAsset];
+    const total = newAssets.reduce((s, a) => s + a.estimatedValue, 0);
+    onChange({ ...estate, assets: newAssets, totalValue: total });
+  };
+
+  const updateAsset = (id: string, updates: Partial<Asset>) => {
+    const newAssets = estate.assets.map((a) =>
+      a.id === id ? { ...a, ...updates } : a
+    );
+    const total = newAssets.reduce((s, a) => s + a.estimatedValue, 0);
+    onChange({ ...estate, assets: newAssets, totalValue: total });
+  };
+
+  const removeAsset = (id: string) => {
+    const newAssets = estate.assets.filter((a) => a.id !== id);
+    const total = newAssets.reduce((s, a) => s + a.estimatedValue, 0);
+    onChange({ ...estate, assets: newAssets, totalValue: total });
+  };
+
+  const switchMode = (newMode: "total" | "detailed") => {
+    if (newMode === "total" && mode === "detailed") {
+      // الاحتفاظ بالمجموع وتفريغ الأصول
+      const total = estate.assets.reduce((s, a) => s + a.estimatedValue, 0);
+      onChange({ ...estate, assets: [], totalValue: total });
+    } else if (newMode === "detailed" && mode === "total") {
+      onChange({ ...estate, assets: [] });
+    }
+    setMode(newMode);
   };
 
   return (
@@ -268,22 +340,131 @@ function EstateStep({
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-5">
-        <div className="space-y-2">
-          <Label className="flex items-center gap-2 text-sm">
-            <Landmark className="h-4 w-4 text-primary/70" />
-            إجمالي قيمة التركة
-          </Label>
-          <Input
-            type="number"
-            min={0}
-            placeholder="أدخل القيمة"
-            className="h-12 text-base"
-            value={estate.totalValue || ""}
-            onChange={(e) =>
-              onChange({ ...estate, totalValue: Number(e.target.value) || 0 })
-            }
-          />
+        {/* اختيار طريقة الإدخال */}
+        <div className="flex gap-2 rounded-lg bg-muted/50 p-1">
+          <button
+            onClick={() => switchMode("total")}
+            className={`flex-1 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+              mode === "total"
+                ? "bg-white text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            مبلغ إجمالي
+          </button>
+          <button
+            onClick={() => switchMode("detailed")}
+            className={`flex-1 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+              mode === "detailed"
+                ? "bg-white text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            تفصيل الأصول
+          </button>
         </div>
+
+        {mode === "total" ? (
+          /* === الوضع البسيط: مبلغ إجمالي === */
+          <div className="space-y-2">
+            <Label className="flex items-center gap-2 text-sm">
+              <Landmark className="h-4 w-4 text-primary/70" />
+              إجمالي قيمة التركة
+            </Label>
+            <Input
+              type="number"
+              min={0}
+              placeholder="أدخل القيمة"
+              className="h-12 text-base"
+              value={estate.totalValue || ""}
+              onChange={(e) =>
+                onChange({ ...estate, totalValue: Number(e.target.value) || 0 })
+              }
+            />
+          </div>
+        ) : (
+          /* === وضع تفصيل الأصول === */
+          <div className="space-y-3">
+            {estate.assets.map((asset) => {
+              const AssetIcon = ASSET_ICONS[asset.type];
+              return (
+                <div
+                  key={asset.id}
+                  className="rounded-xl border border-border/60 bg-white p-4 space-y-3"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                        <AssetIcon className="h-4 w-4" />
+                      </div>
+                      <select
+                        value={asset.type}
+                        onChange={(e) =>
+                          updateAsset(asset.id, { type: e.target.value as AssetType })
+                        }
+                        className="rounded-md border-0 bg-transparent text-sm font-medium text-foreground focus:ring-0"
+                      >
+                        {Object.entries(ASSET_TYPE_LABELS).map(([key, label]) => (
+                          <option key={key} value={key}>
+                            {label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <button
+                      onClick={() => removeAsset(asset.id)}
+                      className="rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                  <Input
+                    placeholder={ASSET_PLACEHOLDERS[asset.type]}
+                    value={asset.description}
+                    onChange={(e) =>
+                      updateAsset(asset.id, { description: e.target.value })
+                    }
+                    className="h-10 text-sm"
+                  />
+                  <div className="space-y-1">
+                    <Label className="text-xs text-muted-foreground">القيمة التقديرية</Label>
+                    <Input
+                      type="number"
+                      min={0}
+                      placeholder="0"
+                      className="h-11 text-base"
+                      value={asset.estimatedValue || ""}
+                      onChange={(e) =>
+                        updateAsset(asset.id, {
+                          estimatedValue: Number(e.target.value) || 0,
+                        })
+                      }
+                    />
+                  </div>
+                </div>
+              );
+            })}
+
+            <Button
+              variant="outline"
+              onClick={addAsset}
+              className="w-full gap-2 border-dashed"
+            >
+              <Plus className="h-4 w-4" />
+              إضافة أصل
+            </Button>
+
+            {estate.assets.length > 0 && (
+              <div className="rounded-lg bg-muted/50 p-3 text-center">
+                <p className="text-xs text-muted-foreground">إجمالي الأصول</p>
+                <p className="text-xl font-bold text-foreground">
+                  {formatCurrency(estate.totalValue)}
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+
         <Separator />
         <p className="text-sm font-medium text-muted-foreground">الخصومات المسبقة</p>
         <div className="space-y-2">
