@@ -478,14 +478,16 @@ function EstateStep({
                       <Trash2 className="h-4 w-4" />
                     </button>
                   </div>
-                  <Input
-                    placeholder={ASSET_PLACEHOLDERS[asset.type]}
-                    value={asset.description}
-                    onChange={(e) =>
-                      updateAsset(asset.id, { description: e.target.value })
-                    }
-                    className="h-10 text-sm"
-                  />
+                  {asset.type !== "gold" && (
+                    <Input
+                      placeholder={ASSET_PLACEHOLDERS[asset.type]}
+                      value={asset.description}
+                      onChange={(e) =>
+                        updateAsset(asset.id, { description: e.target.value })
+                      }
+                      className="h-10 text-sm"
+                    />
+                  )}
 
                   {/* مقيّم الذهب */}
                   {asset.type === "gold" ? (
