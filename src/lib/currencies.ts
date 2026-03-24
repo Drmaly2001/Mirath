@@ -12,6 +12,7 @@ export type CurrencyCode =
   | "EGP"
   | "JOD"
   | "IQD"
+  | "SDG"
   | "USD";
 
 export interface CurrencyInfo {
@@ -30,6 +31,7 @@ export const CURRENCIES: Record<CurrencyCode, CurrencyInfo> = {
   EGP: { label: "جنيه مصري", symbol: "ج.م", rateToUSD: 50.0 },
   JOD: { label: "دينار أردني", symbol: "د.أ", rateToUSD: 0.709 },
   IQD: { label: "دينار عراقي", symbol: "د.ع", rateToUSD: 1310.0 },
+  SDG: { label: "جنيه سوداني", symbol: "ج.س", rateToUSD: 601.0 },
   USD: { label: "دولار أمريكي", symbol: "$", rateToUSD: 1.0 },
 };
 
