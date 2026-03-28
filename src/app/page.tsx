@@ -41,7 +41,7 @@ export default function Home() {
           <div className="mx-auto max-w-6xl px-4 text-center">
             <Badge variant="secondary" className="mb-6 text-sm">
               <Sparkles className="ml-1 h-3.5 w-3.5" />
-              مجاني بالكامل — لا اشتراك ولا إعلانات
+              لا اشتراك ولا إعلانات
             </Badge>
             <h1 className="mb-4 text-4xl font-bold tracking-tight text-foreground md:text-5xl lg:text-6xl">
               وزّع الميراث بدقة فقهية
@@ -195,7 +195,7 @@ export default function Home() {
               <WhyItem text="الحجب: كشف تلقائي لمن يُحجب ولماذا مع ذكر القاعدة الفقهية" />
               <WhyItem text="طباعة وتنزيل: احفظ النتائج كملف أو اطبعها أو شاركها مباشرة" />
               <WhyItem text="مكتبة فقهية: مصطلحات وحالات خاصة وفلسفة الميراث في الإسلام" />
-              <WhyItem text="مجاني ومفتوح المصدر: لا إعلانات ولا اشتراك ولا جمع بيانات" />
+              <WhyItem text="مفتوح المصدر: لا إعلانات ولا اشتراك ولا جمع بيانات" />
             </div>
           </div>
         </section>
